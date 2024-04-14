@@ -81,5 +81,7 @@ Reducing densify_grad_threshold can increase the number of splats, but it will a
 
 densify_from_iter and densify_until_iter are also related to densification.
 
-
+## TODO
+Train with perspective and equirectangular images together.
+Fish eye camera model.
 
