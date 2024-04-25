@@ -8,3 +8,6 @@
 [submodule "submodules/diff-gaussian-rasterization"]
 	path = submodules/diff-gaussian-rasterization
 	url = https://github.com/ShntrIto/shntr-360-diff-gaussian-rasterization.git
+[submodule "submodules/testtesttest"]
+	path = submodules/testtesttest
+	url = https://github.com/graphdeco-inria/gaussian-splatting.git
