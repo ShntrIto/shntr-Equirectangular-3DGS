@@ -12,3 +12,6 @@
 [submodule "submodules/shntr-diff-gaussian-rasterization"]
 	path = submodules/shntr-diff-gaussian-rasterization
 	url = https://github.com/ShntrIto/shntr-diff-gaussian-rasterization.git
+[submodule "shntr-diff-gaussian-rasterization"]
+	path = shntr-diff-gaussian-rasterization
+	url = https://github.com/ShntrIto/shntr-diff-gaussian-rasterization.git
