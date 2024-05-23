@@ -2,3 +2,6 @@
 	path = SIBR_viewers
 	url = https://gitlab.inria.fr/sibr/sibr_core.git
 	branch = for_gaussian_splatting
+[submodule "submodules/shntr-diff-gaussian-rasterization"]
+	path = submodules/shntr-diff-gaussian-rasterization
+	url = https://github.com/ShntrIto/shntr-diff-gaussian-rasterization.git
