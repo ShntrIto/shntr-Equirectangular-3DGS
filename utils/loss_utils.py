@@ -24,6 +24,12 @@ def latitude_weight(height):
 def l1_loss(network_output, gt, weights=None):
     if weights is None:
         weights = torch.ones_like(gt)
+    # if mask is not None:
+        # C,_,W = gt.shape
+        # network_output = network_output[mask].reshape(C,-1,W) # (C, H_masked, W)
+        # gt = gt[mask].reshape(C,-1,W) # (C, H_masked, W)a
+        # weight_mask = mask[:,:,0].unsqueeze(2)
+        # weights = weights[weight_mask].reshape(C, gt.shape[1], -1)
     return torch.abs((network_output - gt) * weights).mean()
 
 def l2_loss(network_output, gt):

@@ -92,12 +92,26 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         # Loss
         gt_image = viewpoint_cam.original_image.cuda()
         mask = viewpoint_cam.is_masked
-        if mask is not None:
-            mask = mask.cuda()
-            gt_image[mask] = image.detach()[mask]
+        # if mask is not None:
+        #     mask = mask.cuda()
+        #     gt_image[mask] = image.detach()[mask]
+        #     import pdb
+        #     pdb.set_trace()
         if viewpoint_cam.panorama:
-            Ll1 = l1_loss(image, gt_image, weights=weights)
-            loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image, weights=weights))
+            if mask is not None:
+                C,_,W=gt_image.shape
+                mask = ~mask
+                w_mask = mask[:,:,0].unsqueeze(2) # weights の大きさのマスクを作成
+                image = image[mask].reshape(C,-1,W)
+                gt_image = gt_image[mask].reshape(C,-1,W)
+                weights = weights[w_mask].reshape(C,gt_image.shape[1],-1)
+                Ll1 = l1_loss(image, gt_image, weights=weights)
+                loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image, weights=weights))
+                # Ll1 = l1_loss(image, gt_image, mask=mask, w_mask=w_mask, weights=weights)
+                # loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image, mask=mask, w_mask=w_mask, weights=weights))
+            else:
+                Ll1 = l1_loss(image, gt_image, weights=weights)
+                loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image, weights=weights))
         else:
             Ll1 = l1_loss(image, gt_image)
             loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image))

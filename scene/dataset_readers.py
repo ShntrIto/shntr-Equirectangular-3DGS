@@ -167,9 +167,12 @@ def readOpensfmCameras(cam_extrinsics, cam_intrinsics, images_folder, masks_fold
         mask = None
         mask_path = None
         if masks_folder is not None and masks_folder != "":
-            possible_mask_path = os.path.join(masks_folder, "{}.png".format(extr.name))
+            possible_mask_path = os.path.join(masks_folder, "{}".format(extr.name)) # removed ".png" because it's duplicated
             if os.path.exists(possible_mask_path):
-                mask = Image.open(possible_mask_path)
+                mask = Image.open(possible_mask_path).convert('L')
+                # mask = Image.open(possible_mask_path)
+                # import pdb
+                # pdb.set_trace()
                 assert mask.size == image.size, "image dimension {} doesn't match to the mask {}".format(
                     image.size,
                     mask.size,
