@@ -68,6 +68,8 @@ def getProjectionMatrix(znear, zfar, fovX, fovY):
     P[3, 2] = z_sign
     P[2, 2] = z_sign * zfar / (zfar - znear)
     P[2, 3] = -(zfar * znear) / (zfar - znear)
+    import pdb
+    pdb.set_trace()
     return P
 
 def fov2focal(fov, pixels):

@@ -48,7 +48,6 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
         spherical=False,
         debug=pipe.debug
     )
-
     rasterizer = GaussianRasterizer(raster_settings=raster_settings)
 
     means3D = pc.get_xyz
@@ -218,6 +217,8 @@ def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torc
         debug=pipe.debug
     )
 
+    import pdb
+    pdb.set_trace()
     rasterizer = GaussianRasterizer(raster_settings=raster_settings)
 
     means3D = pc.get_xyz
