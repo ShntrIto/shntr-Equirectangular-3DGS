@@ -383,6 +383,7 @@ def readOpensfmSceneInfo(path, images, eval, panorama, llffhold=8, masks=None):
         else:
             train_cam_infos = cam_infos
             test_cam_infos = []
+            # test_cam_infos = cam_infos
         nerf_normalization = getNerfppNorm(train_cam_infos)
 
 

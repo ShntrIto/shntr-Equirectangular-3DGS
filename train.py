@@ -77,7 +77,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             viewpoint_stack = scene.getTrainCameras().copy()
         viewpoint_cam = viewpoint_stack.pop(randint(0, len(viewpoint_stack)-1))
         weights = latitude_weight(viewpoint_cam.image_height).to(device)
-
+        import pdb
+        pdb.set_trace()
         # Render
         if (iteration - 1) == debug_from:
             pipe.debug = True
@@ -112,8 +113,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             if mask is not None:
                 mask = mask.cuda()
                 gt_image[mask] = image.detach()[mask]
-                import pdb
-                pdb.set_trace()
             Ll1 = l1_loss(image, gt_image)
             loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image))
         loss.backward()
