@@ -77,8 +77,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             viewpoint_stack = scene.getTrainCameras().copy()
         viewpoint_cam = viewpoint_stack.pop(randint(0, len(viewpoint_stack)-1))
         weights = latitude_weight(viewpoint_cam.image_height).to(device)
-        import pdb
-        pdb.set_trace()
         # Render
         if (iteration - 1) == debug_from:
             pipe.debug = True
