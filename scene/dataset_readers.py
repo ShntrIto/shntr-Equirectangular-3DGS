@@ -171,8 +171,6 @@ def readOpensfmCameras(cam_extrinsics, cam_intrinsics, images_folder, masks_fold
             if os.path.exists(possible_mask_path):
                 mask = Image.open(possible_mask_path).convert('L')
                 # mask = Image.open(possible_mask_path)
-                # import pdb
-                # pdb.set_trace()
                 assert mask.size == image.size, "image dimension {} doesn't match to the mask {}".format(
                     image.size,
                     mask.size,

@@ -83,8 +83,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
         bg = torch.rand((3), device=device) if opt.random_background else background
         if viewpoint_cam.panorama:
-            import pdb
-            pdb.set_trace()
             render_pkg = render_spherical(viewpoint_cam, gaussians, pipe, bg)
         else:
             render_pkg = render(viewpoint_cam, gaussians, pipe, bg)
