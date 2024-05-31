@@ -21,7 +21,7 @@ CameraModel = collections.namedtuple(
 Camera = collections.namedtuple(
     "Camera", ["id", "model", "width", "height", "params", "panorama"])
 BaseImage = collections.namedtuple(
-    "Image", ["id", "qvec", "tvec", "camera_id", "name", "xys", "point3D_ids", "diff_ref"])
+    "Image", ["id", "qvec", "tvec", "camera_id", "name", "xys", "point3D_ids"])
 Point3D = collections.namedtuple(
     "Point3D", ["id", "xyz", "rgb", "error", "image_ids", "point2D_idxs"])
 CAMERA_MODELS = {
@@ -69,9 +69,8 @@ def rotmat2qvec(R):
     return qvec
 
 def angle_axis_to_quaternion(angle_axis: np.ndarray):
-    angle = np.linalg.norm(angle_axis)
-
-    x = angle_axis[0] / angle
+    angle = np.linalg.norm(angle_axis) # 回転角度を求める
+    x = angle_axis[0] / angle # 回転軸の単位ベクトル
     y = angle_axis[1] / angle
     z = angle_axis[2] / angle
 
@@ -80,6 +79,25 @@ def angle_axis_to_quaternion(angle_axis: np.ndarray):
     qy = y * math.sqrt(1 - qw * qw)
     qz = z * math.sqrt(1 - qw * qw)
 
+    return np.array([qw, qx, qy, qz])
+
+def my_angle_axis_to_quaternion(angle_axis: np.ndarray):
+    angle_x = angle_axis[0]
+    angle_y = angle_axis[1]
+    angle_z = angle_axis[2]
+
+    cz = math.cos(angle_z * 0.5)
+    sz = math.sin(angle_z * 0.5)
+    cy = math.cos(angle_y * 0.5)
+    sy = math.sin(angle_y * 0.5)
+    cx = math.cos(angle_x * 0.5)
+    sx = math.sin(angle_x * 0.5)
+
+    qw = cz * cy * cx + sz * sy * sx
+    qx = sx * cy * cz - cx * sy * sz
+    qy = cx * sy * cz + sx * cy * sz
+    qz = cx * cy * sz - sx * sy * cz
+    
     return np.array([qw, qx, qy, qz])
 
 def angle_axis_and_angle_to_quaternion(angle, axis):
@@ -258,14 +276,14 @@ def read_opensfm_extrinsics_split(reconstructions):
 def read_opensfm(reconstructions):
     images = {}
     i = 0
-    reference_lat_0 = reconstructions[0]["reference_lla"]["latitude"]
-    reference_lon_0 = reconstructions[0]["reference_lla"]["longitude"]
-    reference_alt_0 = reconstructions[0]["reference_lla"]["altitude"]
-    e2u_zone=int(divmod(reference_lon_0, 6)[0])+31
-    e2u_conv=Proj(proj='utm', zone=e2u_zone, ellps='WGS84')
-    reference_x_0, reference_y_0 = e2u_conv(reference_lon_0, reference_lat_0)
-    if reference_lat_0<0:
-        reference_y_0=reference_y_0+10000000
+    # reference_lat_0 = reconstructions[0]["reference_lla"]["latitude"]
+    # reference_lon_0 = reconstructions[0]["reference_lla"]["longitude"]
+    # reference_alt_0 = reconstructions[0]["reference_lla"]["altitude"]
+    # e2u_zone=int(divmod(reference_lon_0, 6)[0])+31
+    # e2u_conv=Proj(proj='utm', zone=e2u_zone, ellps='WGS84')
+    # reference_x_0, reference_y_0 = e2u_conv(reference_lon_0, reference_lat_0)
+    # if reference_lat_0<0:
+    #     reference_y_0=reference_y_0+10000000
     cameras = {}
     camera_names = {}
     cam_id = 1
@@ -280,7 +298,7 @@ def read_opensfm(reconstructions):
                 height = reconstruction["cameras"][camera]["height"]
                 f = width / 4 / 2# assume fov = 90
                 params = np.array([f, width , height])
-                cameras[camera_id] = Camera(id=camera_id, model=model, width=width, height=height, params=params, panorama=True)
+                cameras[camera_id] = Camera(id=camera_id, model=model, width=width, height=height, params=params, panorama=True) # Intrinsics
                 camera_names[camera_name] = camera_id
             elif reconstruction["cameras"][camera]['projection_type'] == "perspective":
                 model = "SIMPLE_PINHOLE"
@@ -291,31 +309,32 @@ def read_opensfm(reconstructions):
                 k2 = reconstruction["cameras"][camera]["k2"]
                 params = np.array([f, width / 2, width / 2, k1, k2])
                 camera_id = cam_id
-                cameras[camera_id] = Camera(id=camera_id, model=model, width=width, height=height, params=params, panorama=False)
+                cameras[camera_id] = Camera(id=camera_id, model=model, width=width, height=height, params=params, panorama=False) # Intrinsics
                 camera_names[camera_name] = camera_id
                 cam_id += 1
     for reconstruction in reconstructions:
-        reference_lat = reconstruction["reference_lla"]["latitude"]
-        reference_lon = reconstruction["reference_lla"]["longitude"]
-        reference_alt = reconstruction["reference_lla"]["altitude"]
-        reference_x, reference_y = e2u_conv(reference_lon, reference_lat)
-        if reference_lat<0:
-            reference_y=reference_y+10000000
+        # reference_lat = reconstruction["reference_lla"]["latitude"]
+        # reference_lon = reconstruction["reference_lla"]["longitude"]
+        # reference_alt = reconstruction["reference_lla"]["altitude"]
+        # reference_x, reference_y = e2u_conv(reference_lon, reference_lat)
+        # if reference_lat<0:
+        #     reference_y=reference_y+10000000
         for shot in reconstruction["shots"]:
             translation = reconstruction["shots"][shot]["translation"]
             rotation = reconstruction["shots"][shot]["rotation"]
-            qvec = angle_axis_to_quaternion(rotation)
-            diff_ref_x = reference_x - reference_x_0
-            diff_ref_y = reference_y - reference_y_0
-            diff_ref_alt = reference_alt - reference_alt_0
+            # qvec = angle_axis_to_quaternion(rotation)
+            qvec = my_angle_axis_to_quaternion(rotation)
+            # diff_ref_x = reference_x - reference_x_0
+            # diff_ref_y = reference_y - reference_y_0
+            # diff_ref_alt = reference_alt - reference_alt_0
             tvec = np.array([translation[0], translation[1], translation[2]])
-            diff_ref = np.array([diff_ref_x, diff_ref_y, diff_ref_alt])
+            # diff_ref = np.array([diff_ref_x, diff_ref_y, diff_ref_alt])
             camera_name = reconstruction["shots"][shot]["camera"] 
-            camera_id = camera_names.get(camera_name, 0)  # カメラ名からIDを取得
+            camera_id = camera_names.get(camera_name, 0)  # Get ID from the camera name
             image_id = i
             image_name = shot
             xys = np.array([0, 0]) # dummy 
             point3D_ids = np.array([0, 0]) # dummy
-            images[image_id] = Image(id=image_id, qvec=qvec, tvec=tvec, camera_id=camera_id, name=image_name, xys=xys, point3D_ids=point3D_ids, diff_ref=diff_ref)
+            images[image_id] = Image(id=image_id, qvec=qvec, tvec=tvec, camera_id=camera_id, name=image_name, xys=xys, point3D_ids=point3D_ids) # Extrinsics
             i += 1
     return cameras, images

@@ -103,8 +103,10 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder):
         image_name = os.path.basename(image_path).split(".")[0]
         image = Image.open(image_path)
 
+        # cam_info = CameraInfo(uid=uid, R=R, T=T, FovY=FovY, FovX=FovX, image=image,
+        #                       image_path=image_path, image_name=image_name, width=width, height=height)
         cam_info = CameraInfo(uid=uid, R=R, T=T, FovY=FovY, FovX=FovX, image=image,
-                              image_path=image_path, image_name=image_name, width=width, height=height)
+                              image_path=image_path, image_name=image_name, width=width, height=height, mask=None, mask_path=None, panorama=False)
         cam_infos.append(cam_info)
     sys.stdout.write('\n')
     return cam_infos
@@ -197,8 +199,8 @@ def readOpensfmCameras(cam_extrinsics, cam_intrinsics, images_folder, masks_fold
         # Rt[3, 3] = 1.0  
         # c2w_tmp = np.linalg.inv(Rt) # c2w
         # c2w_tmp[:3, 3] = c2w_tmp[:3, 3] + extr.diff_ref
-        # R = c2w_tmp[:3, :3]
-        # T = np.linalg.inv(c2w_tmp)[:3, 3]
+        # R_t = c2w_tmp[:3, :3]
+        # T_t = np.linalg.inv(c2w_tmp)[:3, 3]
 
         cam_info = CameraInfo(uid=uid, R=R, T=T, FovY=FovY, FovX=FovX, image=image, mask=mask,
                               image_path=image_path, mask_path=mask_path, image_name=image_name, width=width, height=height, panorama=panorama)
@@ -369,7 +371,7 @@ def readOpensfmSceneInfo(path, images, eval, panorama, llffhold=8, masks=None):
             reading_dir = "images"
             cam_intrinsics, cam_extrinsics = read_opensfm(reconstruction)
         else:
-            reading_dir = "images_split"
+            reading_dir = "images"
             cam_extrinsics = read_opensfm_extrinsics_split(reconstruction)
             cam_intrinsics = read_opensfm_intrinsics_split(reconstruction)
         cam_infos_unsorted = readOpensfmCameras(cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics, images_folder=os.path.join(path, reading_dir), masks_folder=masks)
@@ -383,7 +385,6 @@ def readOpensfmSceneInfo(path, images, eval, panorama, llffhold=8, masks=None):
             test_cam_infos = []
             # test_cam_infos = cam_infos
         nerf_normalization = getNerfppNorm(train_cam_infos)
-
 
         ply_path = os.path.join(path, "reconstruction.ply")
         xyz, rgb, _ = read_opensfm_points3D(reconstruction)
