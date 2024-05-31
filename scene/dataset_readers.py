@@ -177,28 +177,28 @@ def readOpensfmCameras(cam_extrinsics, cam_intrinsics, images_folder, masks_fold
                 )
                 mask_path = possible_mask_path
                 mask_count += 1
-        R_y = np.array([[ 0.0, 0.0,  1.0, 0.0], [ 0.0,  1.0,  0.0, 0.0], [ -1.0,  0.0,  0.0, 0.0], [ 0.0,  0.0,  0.0, 1.0]])
-        """
-        if extr.camera_id <= 3:
-            for i in range(extr.camera_id):
-                Rt = np.zeros((4, 4)) # w2c
-                Rt[:3, :3] = R.transpose() 
-                Rt[:3, 3] = T
-                Rt[3, 3] = 1.0  
-                c2w_tmp = np.linalg.inv(Rt) # c2w
-                RT_c2w = np.matmul(c2w_tmp, R_y.transpose())
-                # RT_c2w = np.matmul(c2w_tmp, R_y.transpose())
-                R = RT_c2w[:3, :3]
-                T = np.linalg.inv(RT_c2w)[:3, 3]
-        """
-        Rt = np.zeros((4, 4)) # w2c
-        Rt[:3, :3] = R.transpose() 
-        Rt[:3, 3] = T
-        Rt[3, 3] = 1.0  
-        c2w_tmp = np.linalg.inv(Rt) # c2w
-        c2w_tmp[:3, 3] = c2w_tmp[:3, 3] + extr.diff_ref
-        R = c2w_tmp[:3, :3]
-        T = np.linalg.inv(c2w_tmp)[:3, 3]
+        # R_y = np.array([[ 0.0, 0.0,  1.0, 0.0], [ 0.0,  1.0,  0.0, 0.0], [ -1.0,  0.0,  0.0, 0.0], [ 0.0,  0.0,  0.0, 1.0]])
+        # """
+        # if extr.camera_id <= 3:
+        #     for i in range(extr.camera_id):
+        #         Rt = np.zeros((4, 4)) # w2c
+        #         Rt[:3, :3] = R.transpose() 
+        #         Rt[:3, 3] = T
+        #         Rt[3, 3] = 1.0  
+        #         c2w_tmp = np.linalg.inv(Rt) # c2w
+        #         RT_c2w = np.matmul(c2w_tmp, R_y.transpose())
+        #         # RT_c2w = np.matmul(c2w_tmp, R_y.transpose())
+        #         R = RT_c2w[:3, :3]
+        #         T = np.linalg.inv(RT_c2w)[:3, 3]
+        # """
+        # Rt = np.zeros((4, 4)) # w2c
+        # Rt[:3, :3] = R.transpose() 
+        # Rt[:3, 3] = T
+        # Rt[3, 3] = 1.0  
+        # c2w_tmp = np.linalg.inv(Rt) # c2w
+        # c2w_tmp[:3, 3] = c2w_tmp[:3, 3] + extr.diff_ref
+        # R = c2w_tmp[:3, :3]
+        # T = np.linalg.inv(c2w_tmp)[:3, 3]
 
         cam_info = CameraInfo(uid=uid, R=R, T=T, FovY=FovY, FovX=FovX, image=image, mask=mask,
                               image_path=image_path, mask_path=mask_path, image_name=image_name, width=width, height=height, panorama=panorama)
