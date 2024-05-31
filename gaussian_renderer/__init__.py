@@ -200,7 +200,6 @@ def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torc
 
     tanfovx = 1
     tanfovy = 1
-
     raster_settings = GaussianRasterizationSettings(
         image_height=int(viewpoint_camera.image_height),
         image_width=int(viewpoint_camera.image_width),
