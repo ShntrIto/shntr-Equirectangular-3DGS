@@ -77,6 +77,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             viewpoint_stack = scene.getTrainCameras().copy()
         viewpoint_cam = viewpoint_stack.pop(randint(0, len(viewpoint_stack)-1))
         weights = latitude_weight(viewpoint_cam.image_height).to(device)
+        
         # Render
         if (iteration - 1) == debug_from:
             pipe.debug = True
@@ -92,8 +93,11 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         gt_image = viewpoint_cam.original_image.cuda()
         mask = viewpoint_cam.is_masked
         if viewpoint_cam.panorama:
-            if mask is not None:
-                # マスクの作成（このマスク生成の影響で実行時間がおよそ5倍くらいになっている）
+            if mask is None:
+                Ll1 = l1_loss(image, gt_image, weights=weights)
+                loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image, weights=weights))
+            else:
+                # マスクの作成（このマスク生成の影響で実行時間がおよそ5倍くらい遅くなっている）
                 C,_,W=gt_image.shape
                 mask = ~mask
                 w_mask = mask[:,:,0].unsqueeze(2) # weights の大きさのマスクを作成
@@ -102,9 +106,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 weights = weights[w_mask].reshape(C,gt_image.shape[1],-1)
 
                 # 損失の計算
-                Ll1 = l1_loss(image, gt_image, weights=weights)
-                loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image, weights=weights))
-            else:
                 Ll1 = l1_loss(image, gt_image, weights=weights)
                 loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image, weights=weights))
         else:
@@ -126,7 +127,11 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             if iteration == opt.iterations:
                 progress_bar.close()
 
-            training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, render_spherical, (pipe, background), device)
+            # training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, render_spherical, (pipe, background), device)
+            if panorama:
+                training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render_spherical, (pipe, background), device)
+            else:
+                training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, (pipe, background), device)
             if (iteration in saving_iterations):
                 print("\n[ITER {}] Saving Gaussians".format(iteration))
                 scene.save(iteration)
@@ -175,7 +180,7 @@ def prepare_output_and_logger(args):
         print("Tensorboard not available: not logging progress")
     return tb_writer
 
-def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_iterations, scene : Scene, renderFunc, renderpanoramaFunc,  renderArgs, device):
+def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_iterations, scene : Scene, renderFunc,  renderArgs, device):
     if tb_writer:
         tb_writer.add_scalar('train_loss_patches/l1_loss', Ll1.item(), iteration)
         tb_writer.add_scalar('train_loss_patches/total_loss', loss.item(), iteration)
@@ -192,10 +197,7 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                 l1_test = 0.0
                 psnr_test = 0.0
                 for idx, viewpoint in enumerate(config['cameras']):
-                    if viewpoint.panorama:
-                        image = torch.clamp(renderpanoramaFunc(viewpoint, scene.gaussians, *renderArgs)["render"], 0.0, 1.0)
-                    else:
-                        image = torch.clamp(renderFunc(viewpoint, scene.gaussians, *renderArgs)["render"], 0.0, 1.0)
+                    image = torch.clamp(renderFunc(viewpoint, scene.gaussians, *renderArgs)["render"], 0.0, 1.0)
                     gt_image = torch.clamp(viewpoint.original_image.to(device), 0.0, 1.0)
                     if tb_writer and (idx < 5):
                         tb_writer.add_images(config['name'] + "_view_{}/render".format(viewpoint.image_name), image[None], global_step=iteration)

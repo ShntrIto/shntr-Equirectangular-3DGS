@@ -81,24 +81,24 @@ def angle_axis_to_quaternion(angle_axis: np.ndarray):
 
     return np.array([qw, qx, qy, qz])
 
-def my_angle_axis_to_quaternion(angle_axis: np.ndarray):
-    angle_x = angle_axis[0]
-    angle_y = angle_axis[1]
-    angle_z = angle_axis[2]
+# def my_angle_axis_to_quaternion(angle_axis: np.ndarray):
+#     angle_x = angle_axis[0]
+#     angle_y = angle_axis[1]
+#     angle_z = angle_axis[2]
 
-    cz = math.cos(angle_z * 0.5)
-    sz = math.sin(angle_z * 0.5)
-    cy = math.cos(angle_y * 0.5)
-    sy = math.sin(angle_y * 0.5)
-    cx = math.cos(angle_x * 0.5)
-    sx = math.sin(angle_x * 0.5)
+#     cz = math.cos(angle_z * 0.5)
+#     sz = math.sin(angle_z * 0.5)
+#     cy = math.cos(angle_y * 0.5)
+#     sy = math.sin(angle_y * 0.5)
+#     cx = math.cos(angle_x * 0.5)
+#     sx = math.sin(angle_x * 0.5)
 
-    qw = cz * cy * cx + sz * sy * sx
-    qx = sx * cy * cz - cx * sy * sz
-    qy = cx * sy * cz + sx * cy * sz
-    qz = cx * cy * sz - sx * sy * cz
+#     qw = cz * cy * cx + sz * sy * sx
+#     qx = sx * cy * cz - cx * sy * sz
+#     qy = cx * sy * cz + sx * cy * sz
+#     qz = cx * cy * sz - sx * sy * cz
     
-    return np.array([qw, qx, qy, qz])
+#     return np.array([qw, qx, qy, qz])
 
 def angle_axis_and_angle_to_quaternion(angle, axis):
     half_angle = angle / 2.0
@@ -190,7 +190,8 @@ def read_opensfm_intrinsics_split(reconstructions):
                 f = reconstruction["cameras"][camera]["focal"]
                 k1 = reconstruction["cameras"][camera]["k1"]
                 k2 = reconstruction["cameras"][camera]["k2"]
-                params = np.array([f, width / 2, width / 2, k1, k2])
+                # params = np.array([f, width / 2, width / 2, k1, k2])
+                params = np.array([f, width / 2, height / 2, k1, k2])
                 camera_id = cam_id
                 cameras[camera_id] = Camera(id=camera_id, model=model,
                                             width=width, height=height,
@@ -322,8 +323,7 @@ def read_opensfm(reconstructions):
         for shot in reconstruction["shots"]:
             translation = reconstruction["shots"][shot]["translation"]
             rotation = reconstruction["shots"][shot]["rotation"]
-            # qvec = angle_axis_to_quaternion(rotation)
-            qvec = my_angle_axis_to_quaternion(rotation)
+            qvec = angle_axis_to_quaternion(rotation)
             # diff_ref_x = reference_x - reference_x_0
             # diff_ref_y = reference_y - reference_y_0
             # diff_ref_alt = reference_alt - reference_alt_0

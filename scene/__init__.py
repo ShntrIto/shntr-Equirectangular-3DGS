@@ -42,7 +42,7 @@ class Scene:
 
         if os.path.exists(os.path.join(args.source_path, "sparse")):
             # scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.images, args.eval, panorama, masks=args.masks)
-            scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.images, args.eval)
+            scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.images, args.eval, masks=args.masks)
         elif os.path.exists(os.path.join(args.source_path, "reconstruction.json")):
             scene_info = sceneLoadTypeCallbacks["Opensfm"](args.source_path, args.images, args.eval, panorama, masks=args.masks)
         elif os.path.exists(os.path.join(args.source_path, "transforms_train.json")):

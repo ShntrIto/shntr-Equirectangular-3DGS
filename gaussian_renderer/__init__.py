@@ -195,11 +195,10 @@ def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torc
         pass
 
     # Set up rasterization configuration
-    # tanfovx = math.tan(viewpoint_camera.FoVx * 0.5)
-    # tanfovy = math.tan(viewpoint_camera.FoVy * 0.5)
 
     tanfovx = 1
     tanfovy = 1
+
     raster_settings = GaussianRasterizationSettings(
         image_height=int(viewpoint_camera.image_height),
         image_width=int(viewpoint_camera.image_width),
@@ -224,9 +223,11 @@ def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torc
 
     # If precomputed 3d covariance is provided, use it. If not, then it will be computed from
     # scaling / rotation by the rasterizer.
+
     scales = None
     rotations = None
     cov3D_precomp = None
+
     if pipe.compute_cov3D_python:
         cov3D_precomp = pc.get_covariance(scaling_modifier)
     else:
@@ -235,8 +236,10 @@ def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torc
 
     # If precomputed colors are provided, use them. Otherwise, if it is desired to precompute colors
     # from SHs in Python, do it. If not, then SH -> RGB conversion will be done by rasterizer.
+    
     shs = None
     colors_precomp = None
+
     if override_color is None:
         if pipe.convert_SHs_python:
             shs_view = pc.get_features.transpose(1, 2).view(-1, 3, (pc.max_sh_degree+1)**2)
