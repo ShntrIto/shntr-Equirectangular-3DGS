@@ -13,7 +13,7 @@ import os
 import torch
 from random import randint
 from utils.loss_utils import l1_loss, ssim, latitude_weight
-from gaussian_renderer import render, render_panorama, render_spherical, network_gui
+from gaussian_renderer import render, render_spherical, network_gui
 import sys
 from scene import Scene, GaussianModel
 from utils.general_utils import safe_state
