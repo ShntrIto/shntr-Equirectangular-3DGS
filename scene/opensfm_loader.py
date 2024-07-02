@@ -321,9 +321,13 @@ def read_opensfm(reconstructions):
         # if reference_lat<0:
         #     reference_y=reference_y+10000000
         for shot in reconstruction["shots"]:
-            translation = reconstruction["shots"][shot]["translation"]
             rotation = reconstruction["shots"][shot]["rotation"]
             qvec = angle_axis_to_quaternion(rotation)
+            translation = reconstruction["shots"][shot]["translation"]
+            # orig_translation = reconstruction["shots"][shot]["translation"]
+            # translation = -qvec2rotmat(orig_translation).T * orig_translation
+            # import pdb
+            # pdb.set_trace()
             # diff_ref_x = reference_x - reference_x_0
             # diff_ref_y = reference_y - reference_y_0
             # diff_ref_alt = reference_alt - reference_alt_0

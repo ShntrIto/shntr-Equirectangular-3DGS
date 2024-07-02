@@ -18,6 +18,7 @@ import sys
 from scene import Scene, GaussianModel
 from utils.general_utils import safe_state
 import uuid
+import math
 from tqdm import tqdm
 from utils.image_utils import psnr
 from argparse import ArgumentParser, Namespace
@@ -28,7 +29,7 @@ try:
 except ImportError:
     TENSORBOARD_FOUND = False
 
-def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from, panorama, device):
+def training(dataset, opt, pipe, simple_mask, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from, panorama, device):
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
     gaussians = GaussianModel(dataset.sh_degree)
@@ -93,17 +94,21 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         gt_image = viewpoint_cam.original_image.cuda()
         mask = viewpoint_cam.is_masked
         if viewpoint_cam.panorama:
-            if mask is None:
+            if simple_mask is None:
                 Ll1 = l1_loss(image, gt_image, weights=weights)
                 loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image, weights=weights))
             else:
                 # マスクの作成（このマスク生成の影響で実行時間がおよそ5倍くらい遅くなっている）
-                C,_,W=gt_image.shape
-                mask = ~mask
-                w_mask = mask[:,:,0].unsqueeze(2) # weights の大きさのマスクを作成
+                C, H, W = gt_image.shape
+                mask = torch.ones(H, W, dtype=torch.bool)
+                mask_top = math.floor(H * simple_mask[0])
+                mask_bottom = math.ceil(H * (1 - simple_mask[0]))
+                mask[:mask_top, :] = False
+                mask[mask_bottom:, :] = False
+                mask = mask.unsqueeze(0).repeat(3, 1, 1)
                 image = image[mask].reshape(C,-1,W)
                 gt_image = gt_image[mask].reshape(C,-1,W)
-                weights = weights[w_mask].reshape(C,gt_image.shape[1],-1)
+                weights = weights[mask[:,:,0].unsqueeze(2)].reshape(C,gt_image.shape[1],-1)
 
                 # 損失の計算
                 Ll1 = l1_loss(image, gt_image, weights=weights)
@@ -231,6 +236,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_iterations", nargs="+", type=int, default=[10_000, 20_000, 30_000])
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--panorama", action="store_true")
+    parser.add_argument("--simple_mask", nargs="+", type=float, default=None)
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[10_000, 20_000, 30_000])
     parser.add_argument("--start_checkpoint", type=str, default = None)
     parser.add_argument("-d", "--device_num", type=str, default="0")
@@ -246,7 +252,7 @@ if __name__ == "__main__":
     # Start GUI server, configure and run training
     network_gui.init(args.ip, args.port)
     torch.autograd.set_detect_anomaly(args.detect_anomaly)
-    training(lp.extract(args), op.extract(args), pp.extract(args), args.test_iterations, args.save_iterations, args.checkpoint_iterations, args.start_checkpoint, args.debug_from, args.panorama, device)
+    training(lp.extract(args), op.extract(args), pp.extract(args), args.simple_mask, args.test_iterations, args.save_iterations, args.checkpoint_iterations, args.start_checkpoint, args.debug_from, args.panorama, device)
 
     # All done
     print("\nTraining complete.")

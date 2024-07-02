@@ -1,0 +1,1 @@
+Namespace(sh_degree=3, source_path='/extra/home/jaxa/shintaro/shntr-Equirectangular-3DGS/data/ocha-room_240522', model_path='ocharoom_original-size', images='images', masks='', resolution=1, white_background=False, data_device='cuda', eval=False)

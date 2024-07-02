@@ -5,6 +5,31 @@ import json
 import numpy as np
 import math
 
+def qvec2rotmat(qvec):
+    return np.array([
+        [1 - 2 * qvec[2]**2 - 2 * qvec[3]**2,
+         2 * qvec[1] * qvec[2] - 2 * qvec[0] * qvec[3],
+         2 * qvec[3] * qvec[1] + 2 * qvec[0] * qvec[2]],
+        [2 * qvec[1] * qvec[2] + 2 * qvec[0] * qvec[3],
+         1 - 2 * qvec[1]**2 - 2 * qvec[3]**2,
+         2 * qvec[2] * qvec[3] - 2 * qvec[0] * qvec[1]],
+        [2 * qvec[3] * qvec[1] - 2 * qvec[0] * qvec[2],
+         2 * qvec[2] * qvec[3] + 2 * qvec[0] * qvec[1],
+         1 - 2 * qvec[1]**2 - 2 * qvec[2]**2]]) 
+
+def rotmat2qvec(R):
+    Rxx, Ryx, Rzx, Rxy, Ryy, Rzy, Rxz, Ryz, Rzz = R.flat
+    K = np.array([
+        [Rxx - Ryy - Rzz, 0, 0, 0],
+        [Ryx + Rxy, Ryy - Rxx - Rzz, 0, 0],
+        [Rzx + Rxz, Rzy + Ryz, Rzz - Rxx - Ryy, 0],
+        [Ryz - Rzy, Rzx - Rxz, Rxy - Ryx, Rxx + Ryy + Rzz]]) / 3.0
+    eigvals, eigvecs = np.linalg.eigh(K)
+    qvec = eigvecs[[3, 0, 1, 2], np.argmax(eigvals)]
+    if qvec[0] < 0:
+        qvec *= -1
+    return qvec
+
 def angle_axis_to_quaternion(angle_axis: np.ndarray):
     angle = np.linalg.norm(angle_axis) # 回転角度を求める
     x = angle_axis[0] / angle # 回転軸の単位ベクトル
@@ -62,10 +87,15 @@ def ConvertFormat(dir):
                 camera_id += 1
             
             for shot in reconstruction["shots"]:
-                translation = reconstruction["shots"][shot]["translation"]
+                orig_translation = np.array(reconstruction["shots"][shot]["translation"])
                 rotation = reconstruction["shots"][shot]["rotation"]
                 camera_name = reconstruction["shots"][shot]["camera"]
-                qvec = angle_axis_to_quaternion(rotation)
+                qvec_T = angle_axis_to_quaternion(rotation)
+                translation = orig_translation
+                # translation = -orig_translation
+                R_T = qvec2rotmat(qvec_T)
+                qvec = rotmat2qvec(R_T)
+                translation = -np.dot(R_T,orig_translation)
                 x, y = 0, 0 # 画像座標 [X, Y]
                 points3D_id = 0 # 3次元点のID [X, Y, Z]
                 qw = qvec[0]
