@@ -124,8 +124,9 @@ def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torc
         prefiltered=False,
         spherical=True,
         debug=pipe.debug
-    )
+    ) # GaussianRasterizer のためのパラメータを設定
 
+    # GaussianRasterizer を raster_settings のパラメータでインスタンス化
     rasterizer = GaussianRasterizer(raster_settings=raster_settings)
 
     means3D = pc.get_xyz
@@ -164,6 +165,7 @@ def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torc
         colors_precomp = override_color
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
+    # rasterizer の forward を呼ぶ
     rendered_image, radii = rasterizer(means3D = means3D, means2D = means2D, shs = shs, colors_precomp = colors_precomp, opacities = opacity, scales = scales, rotations = rotations, cov3D_precomp = cov3D_precomp)
 
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
