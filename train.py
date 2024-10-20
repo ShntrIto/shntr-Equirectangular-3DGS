@@ -91,8 +91,16 @@ def training(dataset, opt, pipe, simple_mask, testing_iterations, saving_iterati
         
         # viewspace_points は，画像座標系におけるガウシアンの位置を表す（2次元座標）
         image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
-        depth = render_pkg["depth"] if "depth" in render_pkg else None # depth
-        import pdb; pdb.set_trace()
+        # import matplotlib.pyplot as plt
+        # if depth is not None:
+        #     plt.imshow(depth.squeeze().detach().cpu().numpy(), cmap='viridis')
+        #     plt.savefig('depth.png')
+        #     plt.close()
+        if iteration % 2000 == 0:
+            import numpy as np
+            depth = render_pkg["rendered_depth"] if "rendered_depth" in render_pkg else None # depth
+            np.save('depth.npy', depth.squeeze().cpu().numpy())
+            import pdb; pdb.set_trace()
         
         # Loss
         gt_image = viewpoint_cam.original_image.cuda()

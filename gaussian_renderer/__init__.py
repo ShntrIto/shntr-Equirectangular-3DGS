@@ -91,7 +91,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             "visibility_filter" : radii > 0,
             "radii": radii}
 
-def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None):
+def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None, override_depth = None):
     """
     Render the scene. 
     
@@ -163,11 +163,14 @@ def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torc
             shs = pc.get_features
     else:
         colors_precomp = override_color
+        
+    if override_depth is not None:
+        depths_precomp = override_depth
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
     # rasterizer の forward を呼ぶ
     # means2D には，
-    rendered_image, radii, rendered_depth = rasterizer(means3D = means3D, means2D = means2D, shs = shs, colors_precomp = colors_precomp, opacities = opacity, scales = scales, rotations = rotations, cov3D_precomp = cov3D_precomp)
+    rendered_image, radii, rendered_depth = rasterizer(means3D = means3D, means2D = means2D, shs = shs, colors_precomp = colors_precomp, depths_preconp = depths_precomp, opacities = opacity, scales = scales, rotations = rotations, cov3D_precomp = cov3D_precomp)
 
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
     # They will be excluded from value updates used in the splitting criteria.
