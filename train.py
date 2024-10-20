@@ -99,7 +99,7 @@ def training(dataset, opt, pipe, simple_mask, testing_iterations, saving_iterati
         if iteration % 2000 == 0:
             import numpy as np
             depth = render_pkg["rendered_depth"] if "rendered_depth" in render_pkg else None # depth
-            np.save('depth.npy', depth.squeeze().cpu().numpy())
+            np.save('depth.npy', depth.squeeze().detach().cpu().numpy())
             import pdb; pdb.set_trace()
         
         # Loss
