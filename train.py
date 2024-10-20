@@ -91,7 +91,8 @@ def training(dataset, opt, pipe, simple_mask, testing_iterations, saving_iterati
         
         # viewspace_points は，画像座標系におけるガウシアンの位置を表す（2次元座標）
         image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
-
+        depth = render_pkg["depth"] if "depth" in render_pkg else None # depth
+        
         # Loss
         gt_image = viewpoint_cam.original_image.cuda()
         mask = viewpoint_cam.is_masked

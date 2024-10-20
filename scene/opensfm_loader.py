@@ -277,14 +277,6 @@ def read_opensfm_extrinsics_split(reconstructions):
 def read_opensfm(reconstructions):
     images = {}
     i = 0
-    # reference_lat_0 = reconstructions[0]["reference_lla"]["latitude"]
-    # reference_lon_0 = reconstructions[0]["reference_lla"]["longitude"]
-    # reference_alt_0 = reconstructions[0]["reference_lla"]["altitude"]
-    # e2u_zone=int(divmod(reference_lon_0, 6)[0])+31
-    # e2u_conv=Proj(proj='utm', zone=e2u_zone, ellps='WGS84')
-    # reference_x_0, reference_y_0 = e2u_conv(reference_lon_0, reference_lat_0)
-    # if reference_lat_0<0:
-    #     reference_y_0=reference_y_0+10000000
     cameras = {}
     camera_names = {}
     cam_id = 1
@@ -314,25 +306,14 @@ def read_opensfm(reconstructions):
                 camera_names[camera_name] = camera_id
                 cam_id += 1
     for reconstruction in reconstructions:
-        # reference_lat = reconstruction["reference_lla"]["latitude"]
-        # reference_lon = reconstruction["reference_lla"]["longitude"]
-        # reference_alt = reconstruction["reference_lla"]["altitude"]
-        # reference_x, reference_y = e2u_conv(reference_lon, reference_lat)
-        # if reference_lat<0:
-        #     reference_y=reference_y+10000000
         for shot in reconstruction["shots"]:
             rotation = reconstruction["shots"][shot]["rotation"]
-            qvec = angle_axis_to_quaternion(rotation)
             translation = reconstruction["shots"][shot]["translation"]
-            # orig_translation = reconstruction["shots"][shot]["translation"]
-            # translation = -qvec2rotmat(orig_translation).T * orig_translation
-            # import pdb
-            # pdb.set_trace()
-            # diff_ref_x = reference_x - reference_x_0
-            # diff_ref_y = reference_y - reference_y_0
-            # diff_ref_alt = reference_alt - reference_alt_0
+            qvec = angle_axis_to_quaternion(rotation)
+            # rotmat_np = np.array(qvec2rotmat(qvec)) # rotation に変換
+            # rotmat_T = rotmat_np.T # WARNING: ここで転置しているのは，translation を世界座標系に変換するため
             tvec = np.array([translation[0], translation[1], translation[2]])
-            # diff_ref = np.array([diff_ref_x, diff_ref_y, diff_ref_alt])
+            # tvec = -rotmat_T @ tvec # WARNING: カメラ座標系における世界座標系の原点を，世界座標系に変換するために必要
             camera_name = reconstruction["shots"][shot]["camera"] 
             camera_id = camera_names.get(camera_name, 0)  # Get ID from the camera name
             image_id = i
