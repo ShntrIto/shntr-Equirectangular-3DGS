@@ -96,11 +96,11 @@ def training(dataset, opt, pipe, simple_mask, testing_iterations, saving_iterati
         #     plt.imshow(depth.squeeze().detach().cpu().numpy(), cmap='viridis')
         #     plt.savefig('depth.png')
         #     plt.close()
-        if iteration % 2000 == 0:
-            import numpy as np
-            depth = render_pkg["rendered_depth"] if "rendered_depth" in render_pkg else None # depth
-            np.save('depth.npy', depth.squeeze().detach().cpu().numpy())
-            import pdb; pdb.set_trace()
+        # if iteration % 2000 == 0:
+        #     import numpy as np
+        #     depth = render_pkg["rendered_depth"] if "rendered_depth" in render_pkg else None # depth
+        #     np.save('depth.npy', depth.squeeze().detach().cpu().numpy())
+        #     import pdb; pdb.set_trace()
         
         # Loss
         gt_image = viewpoint_cam.original_image.cuda()
@@ -215,9 +215,19 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                 psnr_test = 0.0
                 for idx, viewpoint in enumerate(config['cameras']):
                     image = torch.clamp(renderFunc(viewpoint, scene.gaussians, *renderArgs)["render"], 0.0, 1.0)
+                    depth = renderFunc(viewpoint, scene.gaussians, *renderArgs)["rendered_depth"]
                     gt_image = torch.clamp(viewpoint.original_image.to(device), 0.0, 1.0)
                     if tb_writer and (idx < 5):
                         tb_writer.add_images(config['name'] + "_view_{}/render".format(viewpoint.image_name), image[None], global_step=iteration)
+    
+                        import numpy as np
+                        import matplotlib.pyplot as plt
+                        depth = (depth - depth.min()) / (depth.max() - depth.min()) # デプスマップを正規化
+                        depth_np = depth.cpu().numpy()
+                        depth_colored = plt.get_cmap('viridis')(depth_np)[:, :, :, :3] # alpha を除く
+                        depth_colored = torch.from_numpy(depth_colored).permute(0, 3, 1, 2) # CHW に変換
+    
+                        tb_writer.add_images(config['name'] + "_view_{}/render_depth".format(viewpoint.image_name), depth_colored, global_step=iteration)
                         if iteration == testing_iterations[0]:
                             tb_writer.add_images(config['name'] + "_view_{}/ground_truth".format(viewpoint.image_name), gt_image[None], global_step=iteration)
                     l1_test += l1_loss(image, gt_image).mean().double()
