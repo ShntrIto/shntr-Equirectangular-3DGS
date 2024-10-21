@@ -216,6 +216,7 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                 for idx, viewpoint in enumerate(config['cameras']):
                     image = torch.clamp(renderFunc(viewpoint, scene.gaussians, *renderArgs)["render"], 0.0, 1.0)
                     depth = renderFunc(viewpoint, scene.gaussians, *renderArgs)["rendered_depth"]
+                    confidence = renderFunc(viewpoint, scene.gaussians, *renderArgs)["confidence"]
                     gt_image = torch.clamp(viewpoint.original_image.to(device), 0.0, 1.0)
                     if tb_writer and (idx < 5):
                         tb_writer.add_images(config['name'] + "_view_{}/render".format(viewpoint.image_name), image[None], global_step=iteration)
@@ -224,10 +225,15 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                         import matplotlib.pyplot as plt
                         depth = (depth - depth.min()) / (depth.max() - depth.min()) # デプスマップを正規化
                         depth_np = depth.cpu().numpy()
-                        depth_colored = plt.get_cmap('viridis')(depth_np)[:, :, :, :3] # alpha を除く
+                        depth_colored = plt.get_cmap('turbo')(depth_np)[:, :, :, :3] # alpha を除く
                         depth_colored = torch.from_numpy(depth_colored).permute(0, 3, 1, 2) # CHW に変換
+                        
+                        confidence_np = 1 - confidence.cpu().numpy() # 信頼度を反転
+                        confidence_colored = plt.get_cmap('reds')(confidence_np)[:, :, :, :3] # alpha を除く
+                        confidence_colored = torch.from_numpy(confidence_colored).permute(0, 3, 1, 2) # CHW に変換
     
                         tb_writer.add_images(config['name'] + "_view_{}/render_depth".format(viewpoint.image_name), depth_colored, global_step=iteration)
+                        tb_writer.add_images(config['name'] + "_view_{}/render_conf".format(viewpoint.image_name), confidence_colored, global_step=iteration)
                         if iteration == testing_iterations[0]:
                             tb_writer.add_images(config['name'] + "_view_{}/ground_truth".format(viewpoint.image_name), gt_image[None], global_step=iteration)
                     l1_test += l1_loss(image, gt_image).mean().double()

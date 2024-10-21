@@ -167,7 +167,7 @@ def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torc
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
     # rasterizer の forward を呼ぶ
     # means2D には，
-    rendered_image, radii, rendered_depth = rasterizer(means3D = means3D, means2D = means2D, shs = shs, colors_precomp = colors_precomp, opacities = opacity, scales = scales, rotations = rotations, cov3D_precomp = cov3D_precomp)
+    rendered_image, rendered_depth, radii, confidence = rasterizer(means3D = means3D, means2D = means2D, shs = shs, colors_precomp = colors_precomp, opacities = opacity, scales = scales, rotations = rotations, cov3D_precomp = cov3D_precomp)
 
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
     # They will be excluded from value updates used in the splitting criteria.
@@ -175,4 +175,5 @@ def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torc
             "viewspace_points": screenspace_points,
             "visibility_filter" : radii > 0,
             "radii": radii,
-            "rendered_depth": rendered_depth}
+            "rendered_depth": rendered_depth,
+            "confidence": confidence}
