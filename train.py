@@ -216,6 +216,7 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                 for idx, viewpoint in enumerate(config['cameras']):
                     image = torch.clamp(renderFunc(viewpoint, scene.gaussians, *renderArgs)["render"], 0.0, 1.0)
                     depth = renderFunc(viewpoint, scene.gaussians, *renderArgs)["plane_depth"]
+                    normal = renderFunc(viewpoint, scene.gaussians, *renderArgs)["rendered_normal"]
                     # normal = renderFunc(viewpoint, scene.gaussians, *renderArgs)["rendered_normal"]
                     gt_image = torch.clamp(viewpoint.original_image.to(device), 0.0, 1.0)
                     if tb_writer and (idx < 5):
@@ -228,11 +229,18 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
                         depth_colored = plt.get_cmap('turbo')(depth_np)[:, :, :, :3] # alpha を除く
                         depth_colored = torch.from_numpy(depth_colored).permute(0, 3, 1, 2) # CHW に変換
                         
+                        normal = normal.permute(1,2,0)
+                        normal = normal/(normal.norm(dim=-1, keepdim=True)+1.0e-8)
+                        normal = normal.cpu().numpy()
+                        normal = ((normal+1) * 127.5).astype(np.uint8).clip(0, 255)
+                        normal = torch.from_numpy(normal).permute(2, 0, 1)[None, ...] # CHW に変換
+                        
                         # confidence_np = 1 - confidence.cpu().numpy() # 信頼度を反転
                         # confidence_colored = plt.get_cmap('Reds')(confidence_np)[:, :, :, :3] # alpha を除く
                         # confidence_colored = torch.from_numpy(confidence_colored).permute(0, 3, 1, 2) # CHW に変換
     
-                        tb_writer.add_images(config['name'] + "_view_{}/render_depth".format(viewpoint.image_name), depth_colored, global_step=iteration)
+                        tb_writer.add_images(config['name'] + "_view_{}/render_plane_depth".format(viewpoint.image_name), depth_colored, global_step=iteration)
+                        tb_writer.add_images(config['name'] + "_view_{}/render_normal".format(viewpoint.image_name), normal, global_step=iteration)
                         # tb_writer.add_images(config['name'] + "_view_{}/render_conf".format(viewpoint.image_name), confidence_colored, global_step=iteration)
                         if iteration == testing_iterations[0]:
                             tb_writer.add_images(config['name'] + "_view_{}/ground_truth".format(viewpoint.image_name), gt_image[None], global_step=iteration)
