@@ -20,6 +20,7 @@ from utils.sh_utils import RGB2SH
 from simple_knn._C import distCUDA2
 from utils.graphics_utils import BasicPointCloud
 from utils.general_utils import strip_symmetric, build_scaling_rotation
+from pytorch3d.transforms import quaternion_to_matrix # from PGSR
 
 class GaussianModel:
 
@@ -113,6 +114,27 @@ class GaussianModel:
     @property
     def get_opacity(self):
         return self.opacity_activation(self._opacity)
+    
+    # =====
+    # from PGSR
+    def get_smallest_axis(self, return_idx=False):
+        rotation_matrices = self.get_rotation_matrix()
+        smallest_axis_idx = self.get_scaling.min(dim=-1)[1][..., None, None].expand(-1, 3, -1)
+        smallest_axis = rotation_matrices.gather(2, smallest_axis_idx)
+        if return_idx:
+            return smallest_axis.squeeze(dim=2), smallest_axis_idx[..., 0, 0]
+        return smallest_axis.squeeze(dim=2)
+    
+    def get_normal(self, view_cam):
+        normal_global = self.get_smallest_axis()
+        gaussian_to_cam_global = view_cam.camera_center - self._xyz
+        neg_mask = (normal_global * gaussian_to_cam_global).sum(-1) < 0.0
+        normal_global[neg_mask] = -normal_global[neg_mask]
+        return normal_global
+    
+    def get_rotation_matrix(self):
+        return quaternion_to_matrix(self.get_rotation)
+    # =====
     
     def get_covariance(self, scaling_modifier = 1):
         return self.covariance_activation(self.get_scaling, scaling_modifier, self._rotation)
