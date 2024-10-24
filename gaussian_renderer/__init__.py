@@ -164,10 +164,36 @@ def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torc
     else:
         colors_precomp = override_color
 
+    # 各種モダリティのレンダリング用初期化
+    # =====
+    global_normal = pc.get_normal(viewpoint_camera)
+    local_normal = global_normal @ viewpoint_camera.world_view_transform[:3, :3]
+    pts_in_cam = means3D @ viewpoint_camera.world_view_transform[:3, :3] + viewpoint_camera.world_view_transform[3, :3]
+    depth_z = pts_in_cam[:, 2]
+    local_distance = (local_normal * pts_in_cam).sum(-1).abs()
+    input_all_modal = torch.zeros((means3D.shape[0], 5)).cuda().float()
+    input_all_modal[:, :3] = local_normal
+    input_all_modal[:, 3] = 1.0
+    input_all_modal[:, 4] = local_distance
+    # =====
+    
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
-    # rasterizer の forward を呼ぶ
-    # means2D には，
-    rendered_image, rendered_depth, radii, confidence = rasterizer(means3D = means3D, means2D = means2D, shs = shs, colors_precomp = colors_precomp, opacities = opacity, scales = scales, rotations = rotations, cov3D_precomp = cov3D_precomp)
+    # rendered_image, rendered_depth, radii, confidence = rasterizer(means3D = means3D, means2D = means2D, shs = shs, colors_precomp = colors_precomp, opacities = opacity, scales = scales, rotations = rotations, cov3D_precomp = cov3D_precomp)
+    rendered_image, radii, out_all_modal, plane_depth = rasterizer(
+        means3D = means3D, 
+        means2D = means2D, 
+        shs = shs, 
+        colors_precomp = colors_precomp, 
+        opacities = opacity, 
+        scales = scales, 
+        rotations = rotations,
+        all_modal = input_all_modal, 
+        cov3D_precomp = cov3D_precomp)
+    
+    # 各種モダリティの取り出し
+    rendered_normal = out_all_modal[0:3]
+    rendered_alpha = out_all_modal[3:4, ]
+    rendered_distance = out_all_modal[4:5, ]
 
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
     # They will be excluded from value updates used in the splitting criteria.
@@ -175,5 +201,7 @@ def render_spherical(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torc
             "viewspace_points": screenspace_points,
             "visibility_filter" : radii > 0,
             "radii": radii,
-            "rendered_depth": rendered_depth,
-            "confidence": confidence}
+            "plane_depth": plane_depth,
+            "rendered_normal": rendered_normal,
+            "rendered_alpha": rendered_alpha,
+            "rendered_distance": rendered_distance}
