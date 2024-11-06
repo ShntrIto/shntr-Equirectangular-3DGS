@@ -24,13 +24,8 @@ def latitude_weight(height):
 def l1_loss(network_output, gt, weights=None):
     if weights is None:
         weights = torch.ones_like(gt)
-    # if mask is not None:
-        # C,_,W = gt.shape
-        # network_output = network_output[mask].reshape(C,-1,W) # (C, H_masked, W)
-        # gt = gt[mask].reshape(C,-1,W) # (C, H_masked, W)a
-        # weight_mask = mask[:,:,0].unsqueeze(2)
-        # weights = weights[weight_mask].reshape(C, gt.shape[1], -1)
-    return torch.abs((network_output - gt) * weights).mean()
+    # return torch.abs((network_output - gt) * weights).mean()
+    return torch.abs((network_output - gt) * weights).sum() / weights.sum()
 
 def l2_loss(network_output, gt):
     return ((network_output - gt) ** 2).mean()
@@ -45,7 +40,7 @@ def create_window(window_size, channel):
     window = Variable(_2D_window.expand(channel, 1, window_size, window_size).contiguous())
     return window
 
-def ssim(img1, img2, window_size=11, size_average=True, weights=None):
+def ssim(img1, img2, window_size=11, size_average=True):
     channel = img1.size(-3)
     window = create_window(window_size, channel)
     
@@ -53,11 +48,13 @@ def ssim(img1, img2, window_size=11, size_average=True, weights=None):
         window = window.cuda(img1.get_device())
     window = window.type_as(img1)
     
-    if weights is None:
-        weights = torch.ones_like(img1)
+    # if weights is None:
+    #     weights = torch.ones_like(img1)
     
-    img1 = img1 * weights
-    img2 = img2 * weights
+    img1 = img1
+    img2 = img2
+    # img1 = img1 * weights
+    # img2 = img2 * weights
 
     return _ssim(img1, img2, window, window_size, channel, size_average)
 

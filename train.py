@@ -44,6 +44,15 @@ def training(dataset, opt, pipe, simple_mask, testing_iterations, saving_iterati
 
     iter_start = torch.cuda.Event(enable_timing = True)
     iter_end = torch.cuda.Event(enable_timing = True)
+    
+    mask_H = scene.getTrainCameras()[0].image_height
+    mask_W = scene.getTrainCameras()[0].image_width
+    image_mask = torch.ones((3, mask_H, mask_W), device=device)
+    simple_mask = simple_mask[0]
+    if simple_mask is not None:
+        # image_mask[:, :int(mask_H*simple_mask), :] = 0.0
+        image_mask[:, int(mask_H*(1-simple_mask)):, :] = 0.0
+        image_mask = image_mask.bool()
 
     viewpoint_stack = None
     ema_loss_for_log = 0.0
@@ -77,7 +86,7 @@ def training(dataset, opt, pipe, simple_mask, testing_iterations, saving_iterati
         if not viewpoint_stack:
             viewpoint_stack = scene.getTrainCameras().copy()
         viewpoint_cam = viewpoint_stack.pop(randint(0, len(viewpoint_stack)-1))
-        weights = latitude_weight(viewpoint_cam.image_height).to(device)
+        # weights = latitude_weight(viewpoint_cam.image_height).to(device)
         
         # Render
         if (iteration - 1) == debug_from:
@@ -104,31 +113,18 @@ def training(dataset, opt, pipe, simple_mask, testing_iterations, saving_iterati
         
         # Loss
         gt_image = viewpoint_cam.original_image.cuda()
-        mask = viewpoint_cam.is_masked
         if viewpoint_cam.panorama:
             if simple_mask is None:
-                Ll1 = l1_loss(image, gt_image, weights=weights)
-                loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image, weights=weights))
+                Ll1 = l1_loss(image, gt_image)
+                loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image))
             else:
-                # マスクの作成（このマスク生成の影響で実行時間がおよそ5倍くらい遅くなっている）
-                C, H, W = gt_image.shape
-                mask = torch.ones(H, W, dtype=torch.bool)
-                mask_top = math.floor(H * simple_mask[0])
-                mask_bottom = math.ceil(H * (1 - simple_mask[0]))
-                mask[:mask_top, :] = False
-                mask[mask_bottom:, :] = False
-                mask = mask.unsqueeze(0).repeat(3, 1, 1)
-                image = image[mask].reshape(C,-1,W)
-                gt_image = gt_image[mask].reshape(C,-1,W)
-                weights = weights[mask[:,:,0].unsqueeze(2)].reshape(C,gt_image.shape[1],-1)
-
-                # 損失の計算
-                Ll1 = l1_loss(image, gt_image, weights=weights)
-                loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image, weights=weights))
+                masked_image = image[image_mask].view(image.shape[0], -1, image.shape[-1]) 
+                masked_gt = gt_image[image_mask].view(image.shape[0], -1, image.shape[-1])
+                Ll1 = l1_loss(masked_image, masked_gt)
+                loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(masked_image, masked_gt))
+                # Ll1 = l1_loss(image, gt_image, weights=image_mask)
+                # loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image, weights=weights))
         else:
-            if mask is not None:
-                mask = mask.cuda()
-                gt_image[mask] = image.detach()[mask]
             Ll1 = l1_loss(image, gt_image)
             loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image))
         loss.backward()
